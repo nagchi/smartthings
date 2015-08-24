@@ -1868,7 +1868,7 @@ private def STATE() {
 def pageSelectIndicators() {
     LOG("pageSelectIndicators()")
 
-    def helpPage = "A Indicator allow to use a led switch to show if alarm is armed "
+    def helpPage = "A Indicator allow to use a led switch to show if alarm is armed"
 
     def inputIndicators = [
         name:       "z_indicator",
