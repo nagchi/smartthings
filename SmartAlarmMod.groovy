@@ -8,8 +8,8 @@
  *  information.
  *
  *  Version 2.4.3 (7/7/2015)
- *  Mod add indicator from GE switch 08/24/2015
- *  The latest original version of this file can be found on GitHub at:
+ *
+ *  The latest version of this file can be found on GitHub at:
  *  <https://github.com/statusbits/smartalarm/blob/master/SmartAlarm.groovy>
  *
  *  --------------------------------------------------------------------------
@@ -59,7 +59,7 @@ preferences {
     page name:"pageNotifications"
     page name:"pageRemoteOptions"
     page name:"pageRestApiOptions"
-	  page name:"pageSelectIndicators"
+	page name:"pageSelectIndicators"
 }
 
 mappings {
@@ -1868,8 +1868,7 @@ private def STATE() {
 def pageSelectIndicators() {
     LOG("pageSelectIndicators()")
 
-    def helpPage =
-        "A Indicator allow to use a led switch to show if alarm is armed "
+    def helpPage = "A Indicator allow to use a led switch to show if alarm is armed "
 
     def inputIndicators = [
         name:       "z_indicator",
