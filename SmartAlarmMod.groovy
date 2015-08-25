@@ -1868,7 +1868,8 @@ private def STATE() {
 def pageSelectIndicators() {
     LOG("pageSelectIndicators()")
 
-    def helpPage = "A Indicator allow to use a led switch to show if alarm is armed"
+    def helpPage = "A Indicator allow to use a led switch to show if alarm is armed "
+	def helpindicatorMode = "The Indicator can be inverted to turn off when alarm is armed."
 
     def inputIndicators = [
         name:       "z_indicator",
@@ -1877,6 +1878,15 @@ def pageSelectIndicators() {
         multiple:   true,
         required:   false
     ]
+	
+	def inputIndicatorMode = [
+        name:       "indicatorMode",
+        type:       "bool",
+        title:      "Invert Indicator",
+        defaultValue: false,
+        required:   true
+    ]
+		
 	def pageProperties = [
         name:       "pageSelectIndicators",
         //title:      "",
@@ -1888,6 +1898,11 @@ def pageSelectIndicators() {
             paragraph helpPage
             input inputIndicators
         }
+		section("Indicators Mode") {
+            paragraph helpindicatorMode
+            input inputIndicatorMode
+        }
+		
     }
 }
 
@@ -1900,47 +1915,32 @@ private def initIndicators() {
 	indicatorUpdate()
 }
 
+
 def onIndicator(evt) {
     LOG("onIndicatorEvent(${evt.displayName})")
 
-    if (evt.value == "on") {
-		LOG("evt.value=on")
-    	if (state.armed){
-			LOG("state.armed")
+    	if (state.armed ^ settings.indicatorMode ^ evt.value == "off" ){
+			LOG("state.indicatorWhenOn()")
 			evt.device.indicatorWhenOn()
 		}else{
-			LOG("state.noarmed")
+			LOG("state.indicatorWhenOff()")
 			evt.device.indicatorWhenOff()
 		}
-    } else {
-		LOG("evt.value!=on")
-    	if (state.armed){
-			LOG("state.armed")
-			evt.device.indicatorWhenOff()
-		}else{
-			LOG("state.noarmed")
-			evt.device.indicatorWhenOn()
-		}
-    }
 }
+
 
 def indicatorUpdate(){
     LOG("indicatorUpdate()")
 
 	settings.z_indicator.each() {
 		LOG("${it.label} ${it.currentSwitch}")
-		if (it.currentSwitch == "on"){
-			if (state.armed){
-				it.indicatorWhenOn()
-			}else{
-				it.indicatorWhenOff()
-			}
+
+		if (state.armed ^ settings.indicatorMode ^ it.currentSwitch == "off" ){
+			LOG("state.indicatorWhenOn()")
+			it.indicatorWhenOn()
 		}else{
-			if (state.armed){
-				it.indicatorWhenOff()
-			}else{
-				it.indicatorWhenOn()
-			}
+			LOG("state.indicatorWhenOff()")
+			it.indicatorWhenOff()
 		}
     }
 }
