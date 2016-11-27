@@ -131,7 +131,9 @@ def changeLightColors() {
 	//log.debug "Changint now to new value = $newValue"
 
 	hues*.setColor(newValue)
-        
+
+    //changes color at 1 minute interval.
+    //you may change 2nd digit to 0/5 for 5 minute interval
     schedule("30 0/1 * * * ?", changeLightColors)
 }
 
