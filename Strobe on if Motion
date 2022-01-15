@@ -1,0 +1,91 @@
+/**
+ *  Alarm Strobe on Motion Detection
+ *
+ *  Copyright 2015 Nagaraja Chitters
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ */
+definition(
+    name: "Strobe Only ON If Motion",
+    namespace: "nagchi",
+    author: "Nagaraja Chitters",
+    description: "Alarm Strobe on Motion Detection and Turn OFF after a while.",
+    category: "Convenience",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+)
+
+preferences {
+	section("Alarm strobe to turn ON") {
+		input "alarm", "capability.alarm", title: "Choose Alarm Device", multiple: true
+	}
+    /*
+    section("Siren to turn ON") {
+		input "switches", "capability.switch", title: "Choose in house siren", multiple: true
+	}
+	section("Siren ON time") {                    
+		input "sirenOnMsec", "number", title: "Siren ON Msec?"
+	}
+    */
+	section("Turn OFF when there is no motion") {
+		input "motionSensor", "capability.motionSensor", title: "Choose motion sensor"
+	}
+	section("Pause Time for next Motion Check") {                    
+		input "delayMins", "number", title: "Minutes of inactivity?"
+	}
+}
+
+def installed() {
+	state.strobe = false;
+	subscribe(motionSensor, "motion", motionHandler)
+}
+
+def updated() {
+	unsubscribe()
+	subscribe(motionSensor, "motion", motionHandler)
+}
+
+def motionHandler(evt) {
+	//log.debug "handler $evt.name: $evt.value"
+	if (evt.value == "inactive") {
+		runIn(delayMins * 60, scheduleCheck, [overwrite: false])
+	} else {
+        sendNotificationEvent("Front Motion Seen: Strobe ON")
+        alarm.strobe()
+        /*
+         * In house siren ON
+         *
+        switches.on()
+        switches.off(delay : sirenOnMsec)
+        */
+        state.strobe = true
+    }
+}
+
+def scheduleCheck() {
+	//sendNotificationEvent("Alarm Strobe: Calling scheduled check")
+	def motionState = motionSensor.currentState("motion")
+    if (motionState.value == "inactive") {
+        def elapsed = now() - motionState.rawDateCreated.time
+    	def threshold = 1000 * 60 * delayMins - 1000
+        alarm.off()
+        //switches.off()
+    	if (elapsed >= threshold) {
+            if (state.strobe == true) {
+                sendNotificationEvent("Motion stopped: Strobe OFF")
+                alarm.off()
+                //switches.off()
+                state.strobe = false
+            }
+        }
+    }
+}
