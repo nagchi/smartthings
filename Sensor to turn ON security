@@ -1,0 +1,228 @@
+/**
+ *  Copyright 2015 SmartThings
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  Turn It On For 5 Minutes
+ *  Turn on a switch when a contact sensor opens and then turn it back off 5 minutes later.
+ *
+ *  Author: SmartThings
+ */
+definition(
+    name: "Simpli Safe Sync Switch Monitor",
+    namespace: "smartthings",
+    author: "SmartThings",
+    description: "Change mode to Good Bye if Simpli Safe Sync Switch is closed and I am Back mode if it is open.",
+    category: "Safety & Security",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet@2x.png"
+)
+
+preferences {
+	section("Select Alarm Sync Sensor"){
+		input "contact", "capability.contactSensor"
+	}
+	section("Door contact-1 to check"){
+		input "doorContact1", "capability.contactSensor"
+	}
+    /*
+	section("Door contact-2 to check"){
+		input "doorContact2", "capability.contactSensor"
+	}
+	section("Door contact-3 to check"){
+		input "doorContact3", "capability.contactSensor"
+	}
+	section("Door contact-4 to check"){
+		input "doorContact4", "capability.contactSensor"
+	}
+	section("Door contact-5 to check"){
+		input "doorContact5", "capability.contactSensor"
+	} */
+    
+	section("Arm Away Delay (Minimum 30 sec)") {
+		input "armAwayDelay", "number", title: "Seconds?"
+	}
+    section("Choose Hall  Motion Sensor") {
+		input "motionSensorHall", "capability.motionSensor", title: "Choose hall motion sensor"
+	}
+    /*
+	section("Choose Kitchen Motion Sensor") {
+		input "motionSensorKit", "capability.motionSensor", title: "Choose kitchen motion sensor"
+	} 
+    */
+    section("Which in-home siren to alert"){
+		input "switches", "capability.switch"
+	}
+    section("Which Virtual Switch for mode change"){
+		input "vswitches", "capability.switch"
+	}
+    
+    /*
+    section("Select Camera for Recording...") {
+		input "cameras", "capability.imageCapture", multiple: true
+	}
+    */
+    
+	section("Send message to this phone number"){
+        //input("recipients", "contact", title: "Send notifications to") 
+        input "phone1", "phone", title: "Phone Number", required: false
+    }
+	section("Send message to this phone number"){
+        //input("recipients", "contact", title: "Send notifications to") 
+        input "phone2", "phone", title: "Phone Number", required: false
+    }
+	section("Send message to this phone number"){
+        //input("recipients", "contact", title: "Send notifications to")
+        input "phone3", "phone", title: "Phone Number", required: false
+    }
+	section("Send message to this phone number"){
+        //input("recipients", "contact", title: "Send notifications to")
+        input "phone4", "phone", title: "Phone Number", required: false
+    }
+}
+
+def installed() {
+	//log.debug "Installed with settings: ${settings}"
+	subscribe(contact, "contact.open", contactOpenHandler)
+	subscribe(contact, "contact.closed", contactClosedHandler)
+    subscribe(motionSensorHall, "motion", motionHandler)
+//    subscribe(motionSensorKit, "motion", motionHandler)
+}
+
+def updated(settings) {
+	//log.debug "Updated with settings: ${settings}"
+	unsubscribe()
+	subscribe(contact, "contact.open", contactOpenHandler)
+	subscribe(contact, "contact.closed", contactClosedHandler)    
+    subscribe(motionSensorHall, "motion", motionHandler)
+//    subscribe(motionSensorKit, "motion", motionHandler)
+}
+
+def contactOpenHandler(evt) {
+	/*
+     * debouce delay for mechanical switch
+     */
+     //def contactState = contact.currentState("contact")
+     //if (contactState.value == "closed") {
+     //	return
+     //}
+     
+	/* 
+	 * I Am back
+	 */
+	//log.debug "Changing mode to I Am Back"
+	location.helloHome?.execute("I Am Back")
+    switches.off()
+    vswitches.off()
+	unschedule(delayedGoodBye)
+    
+    if (location.contactBookEnabled) {
+        //sendNotificationToContacts("Changing mode to I Am Back", recipients)
+    }
+    else {
+    	//cameras?.alarmOff()
+        //sendPush("Changing mode to I Am Back")
+        if (phone1) {
+            sendSms(phone1, "Changing mode to I Am Back & Camera Off")
+        }
+        if (phone2) {
+            sendSms(phone2, "Changing mode to I Am Back & Camera Off")
+        }
+        if (phone3) {
+            sendSms(phone3, "Changing mode to I Am Back & Camera Off")
+        }
+        if (phone4) {
+            sendSms(phone4, "Changing mode to I Am Back & Camera Off")
+        }
+    }
+}
+
+def contactClosedHandler(evt) {
+	/*
+     * debouce delay for mechanical switch
+     */
+     //def contactState = contact.currentState("contact")
+     //if (contactState.value == "closed") {
+     //	return
+     //}
+     
+	def doorState1 = doorContact1.currentState("contact")
+    
+    /*
+	def doorState2 = doorContact2.currentState("contact")
+	def doorState3 = doorContact3.currentState("contact")
+	def doorState4 = doorContact4.currentState("contact")
+	def doorState5 = doorContact5.currentState("contact")
+    */
+    
+	//if ((doorState1.value == "open") || (doorState2.value == "open")) {
+    if (doorState1.value == "open") {
+		// Turn ON Hall Siren
+        switches.on()
+	} else {
+    	//delay Between([switches.on(), switches.off()], (1 * 1600))
+        /*
+	 	 * Good Bye
+	 	 */        
+        if (phone1) {
+            sendSms(phone1, "Home will Arm AWAY in 60 seconds!")
+        }
+        if (phone2) {
+            sendSms(phone2, "Home will Arm AWAY in 60 seconds!")
+        }
+        if (phone3) {
+            sendSms(phone3, "Home will Arm AWAY in 60 seconds!")
+        }
+        if (phone4) {
+            sendSms(phone4, "Home will Arm AWAY in 60 seconds!")
+        }        
+        runIn(armAwayDelay, delayedGoodBye)	//seconds
+    }
+}
+
+def motionHandler(evt) {
+	//log.debug "handler $evt.name: $evt.value"
+    if (location.currentMode == "Away") {
+		if (evt.value == "active") {
+        	//sendNotificationEvent("Front Motion Seen: Strobe ON")
+        	//log.debug "Hall Motion seen, Turning ON Hall Siren"
+        	switches.on()
+    	} else {
+    		switches.off()
+   		}
+	}
+}
+
+def delayedGoodBye() {
+	//log.debug "location.currentMode: ${location.currentMode}"
+    //log.debug "Changing mode to Good Bye"
+	location.helloHome?.execute("Good Bye")
+    vswitches.on()
+    
+    if (location.contactBookEnabled) {
+        //sendNotificationToContacts("Changing mode to Good Bye!", recipients)
+    }
+    else {
+        //sendPush("Changing mode to Good Bye!")
+        //cameras?.alarmOn()
+        if (phone1) {
+            sendSms(phone1, "Changing mode to Good Bye & Camera On!")
+        }
+        if (phone2) {
+            sendSms(phone2, "Changing mode to Good Bye & Camera On!")
+        }
+        if (phone3) {
+            sendSms(phone3, "Changing mode to Good Bye & Camera On!")
+        }
+        if (phone4) {
+            sendSms(phone4, "Changing mode to Good Bye & Camera On!")
+        }
+    }
+}
